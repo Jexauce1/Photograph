@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOAH LENS | Photographe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #111010;
+            --bg2: #191818;
+            --bg3: #222020;
+            --white: #f5f2ee;
+            --muted: rgba(245,242,238,0.38);
+            --dim: rgba(245,242,238,0.12);
+            --accent: #f5f2ee;
+            --silver: rgba(245,242,238,0.6);
+            --border: rgba(245,242,238,0.1);
+            --border2: rgba(245,242,238,0.18);
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* ── SHUTTER LOADER ── */
+        .shutter-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: shutterOut 0.9s 0.4s cubic-bezier(0.77,0,0.18,1) forwards;
+        }
+
+        .shutter-icon {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: shutterClick 0.4s 0.1s ease forwards;
+        }
+
+        .shutter-inner {
+            width: 24px;
+            height: 24px;
+            background: var(--white);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: shutterInner 0.3s 0.1s ease forwards;
+        }
+
+        @keyframes shutterClick {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.85); border-color: rgba(245,242,238,0.3); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shutterInner {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shutterOut {
+            0% { clip-path: inset(0 0 0 0); }
+            100% { clip-path: inset(0 0 100% 0); }
+        }
+
+        /* ── HERO FILMSTRIP ── */
+        .hero {
+            width: 100%;
+            max-width: 460px;
+            position: relative;
+        }
+
+        /* Film strip top */
+        .film-strip {
+            width: 100%;
+            height: 28px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .film-strip::before,
+        .film-strip::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 14px;
+            width: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 14px,
+                #1a1a1a 14px,
+                #1a1a1a 22px
+            );
+        }
+
+        .film-perfs {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .perf {
+            width: 10px;
+            height: 16px;
+            background: #111;
+            border-radius: 2px;
+            border: 1px solid #333;
+        }
+
+        /* Main photo area */
+        .hero-photo-area {
+            width: 100%;
+            height: 320px;
+            background: var(--bg2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Grid of fake photo thumbnails */
+        .photo-mosaic {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 2px;
+            opacity: 0.55;
+        }
+
+        .mosaic-cell {
+            background: var(--bg3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Each cell has a unique tonal overlay */
+        .mosaic-cell:nth-child(1) { background: #1a1a1a; }
+        .mosaic-cell:nth-child(2) { background: #242020; font-size: 3.5rem; }
+        .mosaic-cell:nth-child(3) { background: #181818; }
+        .mosaic-cell:nth-child(4) { background: #202020; }
+        .mosaic-cell:nth-child(5) { background: #1c1c1c; font-size: 4rem; }
+        .mosaic-cell:nth-child(6) { background: #1e1a1a; }
+
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg,
+                    rgba(17,16,16,0.4) 0%,
+                    rgba(17,16,16,0.1) 30%,
+                    rgba(17,16,16,0.1) 60%,
+                    rgba(17,16,16,0.95) 100%
+                );
+            z-index: 1;
+        }
+
+        /* Big centered label */
+        .hero-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            gap: 10px;
+        }
+
+        .aperture {
+            width: 70px;
+            height: 70px;
+            border: 1.5px solid rgba(245,242,238,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .aperture::before {
+            content: '';
+            position: absolute;
+            width: 54px;
+            height: 54px;
+            border: 1px solid rgba(245,242,238,0.2);
+            border-radius: 50%;
+        }
+
+        .aperture-inner {
+            width: 28px;
+            height: 28px;
+            border: 1.5px solid rgba(245,242,238,0.7);
+            border-radius: 50%;
+        }
+
+        .hero-bottom {
+            position: absolute;
+            bottom: 20px;
+            left: 22px;
+            right: 22px;
+            z-index: 2;
+        }
+
+        .exp-data {
+            font-size: 0.62rem;
+            letter-spacing: 2px;
+            color: var(--muted);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .hero-name {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 3.2rem;
+            font-weight: 700;
+            line-height: 0.9;
+            letter-spacing: -1px;
+        }
+
+        .hero-name em {
+            display: block;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--silver);
+        }
+
+        /* Film strip bottom */
+        .film-strip-bot {
+            composes:film-strip;
+            width: 100%;
+            height: 28px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .film-strip-bot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 14px;
+            width: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 14px,
+                #1a1a1a 14px,
+                #1a1a1a 22px
+            );
+        }
+
+        .film-frame-nums {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1;
+            padding: 0 6px;
+        }
+
+        .frame-n {
+            font-size: 0.5rem;
+            color: rgba(245,242,238,0.25);
+            letter-spacing: 1px;
+        }
+
+        /* ── CONTAINER ── */
+        .container {
+            width: 100%;
+            max-width: 460px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 20px 16px 60px;
+        }
+
+        /* entrance */
+        .container > * {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeUp 0.5s ease forwards;
+        }
+        .container > *:nth-child(1) { animation-delay: 0.7s; }
+        .container > *:nth-child(2) { animation-delay: 0.8s; }
+        .container > *:nth-child(3) { animation-delay: 0.88s; }
+        .container > *:nth-child(4) { animation-delay: 0.95s; }
+        .container > *:nth-child(5) { animation-delay: 1.02s; }
+        .container > *:nth-child(6) { animation-delay: 1.08s; }
+        .container > *:nth-child(7) { animation-delay: 1.14s; }
+        .container > *:nth-child(8) { animation-delay: 1.20s; }
+
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── BIO CARD ── */
+        .bio-card {
+            border: 1px solid var(--border2);
+            border-radius: 2px;
+            padding: 20px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            background: var(--bg2);
+        }
+
+        .bio-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .bio-avatar {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            overflow: hidden;
+        }
+
+        .bio-avail {
+            font-size: 0.58rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #5dff9a;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .bio-right { flex: 1; }
+
+        .bio-handle {
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .bio-name {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.2rem;
+            font-style: italic;
+            margin-bottom: 6px;
+        }
+
+        .bio-text {
+            font-size: 0.75rem;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .bio-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .bio-tag {
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border: 1px solid var(--border2);
+            color: var(--muted);
+            border-radius: 1px;
+        }
+
+        /* ── SEP ── */
+        .sep {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .sep-line { flex: 1; height: 1px; background: var(--border); }
+
+        .sep-text {
+            font-size: 0.58rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ── PORTFOLIO STRIP ── */
+        .portfolio-strip {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+
+        .portfolio-strip::-webkit-scrollbar { display: none; }
+
+        .port-item {
+            flex-shrink: 0;
+            width: 105px;
+            border: 1px solid var(--border);
+            border-radius: 1px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--white);
+            transition: border-color 0.3s;
+        }
+
+        .port-item:hover { border-color: var(--border2); }
+
+        .port-img {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: var(--bg3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Moody overlay per photo */
+        .port-img::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.6) 100%);
+        }
+
+        .port-info {
+            padding: 7px 9px;
+            background: var(--bg2);
+        }
+
+        .port-cat {
+            font-size: 0.58rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .port-title {
+            font-size: 0.72rem;
+            color: var(--white);
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ── SOCIALS ── */
+        .socials {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .soc {
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 13px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--white);
+            background: var(--bg2);
+            transition: all 0.25s ease;
+        }
+
+        .soc:hover {
+            border-color: var(--border2);
+            background: var(--bg3);
+            transform: translateY(-2px);
+        }
+
+        .soc-ic { font-size: 1.1rem; width: 28px; text-align: center; }
+
+        .soc-nm {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .soc-hd {
+            font-size: 0.62rem;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        /* ── SERVICES ── */
+        .services {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .service {
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+            color: var(--white);
+            background: var(--bg2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 2px;
+            background: var(--white);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            transform-origin: top;
+        }
+
+        .service:hover::before { transform: scaleY(1); }
+
+        .service:hover {
+            background: var(--bg3);
+            padding-left: 22px;
+        }
+
+        .srv-num {
+            font-size: 0.6rem;
+            color: var(--muted);
+            width: 22px;
+            flex-shrink: 0;
+            font-style: italic;
+        }
+
+        .srv-body { flex: 1; }
+
+        .srv-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .srv-desc {
+            font-size: 0.68rem;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .srv-price {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--silver);
+        }
+
+        .srv-arrow {
+            font-size: 0.75rem;
+            color: var(--muted);
+            transition: all 0.3s;
+        }
+
+        .service:hover .srv-arrow {
+            color: var(--white);
+            transform: translateX(4px);
+        }
+
+        /* ── LINKS ── */
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .lk {
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 13px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--white);
+            background: var(--bg2);
+            transition: all 0.25s ease;
+        }
+
+        .lk:hover {
+            border-color: var(--border2);
+            background: var(--bg3);
+            transform: translateX(3px);
+        }
+
+        .lk-ic {
+            font-size: 1rem;
+            width: 28px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .lk-b { flex: 1; }
+
+        .lk-t {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .lk-d {
+            font-size: 0.65rem;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .lk-arr { color: var(--muted); font-size: 0.75rem; transition: all 0.25s; }
+        .lk:hover .lk-arr { color: var(--white); transform: translateX(4px); }
+
+        /* ── FOOTER ── */
+        .footer {
+            padding: 20px 0 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-sig {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.4rem;
+            font-style: italic;
+            color: var(--silver);
+            margin-bottom: 8px;
+        }
+
+        .footer-exp {
+            font-size: 0.6rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .footer-copy {
+            font-size: 0.58rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+
+        @media (max-width: 400px) {
+            .socials { grid-template-columns: 1fr; }
+            .hero-name { font-size: 2.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SHUTTER LOADER -->
+<div class="shutter-overlay">
+    <div class="shutter-icon">
+        <div class="shutter-inner"></div>
+    </div>
+</div>
+
+<!-- HERO FILMSTRIP -->
+<div class="hero">
+    <div class="film-strip">
+        <div class="film-perfs">
+            <div class="perf"></div><div class="perf"></div><div class="perf"></div>
+            <div class="perf"></div><div class="perf"></div><div class="perf"></div>
+            <div class="perf"></div><div class="perf"></div><div class="perf"></div>
+            <div class="perf"></div><div class="perf"></div><div class="perf"></div>
+        </div>
+    </div>
+
+    <div class="hero-photo-area">
+        <div class="photo-mosaic">
+            <div class="mosaic-cell">🌆</div>
+            <div class="mosaic-cell">🖼️</div>
+            <div class="mosaic-cell">🌿</div>
+            <div class="mosaic-cell">👤</div>
+            <div class="mosaic-cell">🌊</div>
+            <div class="mosaic-cell">🏙️</div>
+        </div>
+        <div class="hero-overlay"></div>
+
+        <div class="hero-center">
+            <div class="aperture">
+                <div class="aperture-inner"></div>
+            </div>
+        </div>
+
+        <div class="hero-bottom">
+            <div class="exp-data">f/1.8 · 1/250s · ISO 400 · 35mm</div>
+            <div class="hero-name">
+                Noah
+                <em>Lens.</em>
+            </div>
+        </div>
+    </div>
+
+    <div class="film-strip-bot">
+        <div class="film-frame-nums">
+            <span class="frame-n">01</span><span class="frame-n">02</span>
+            <span class="frame-n">03</span><span class="frame-n">04</span>
+            <span class="frame-n">05</span><span class="frame-n">06</span>
+            <span class="frame-n">07</span><span class="frame-n">08</span>
+            <span class="frame-n">09</span><span class="frame-n">10</span>
+            <span class="frame-n">11</span><span class="frame-n">12</span>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- BIO -->
+    <div class="bio-card">
+        <div class="bio-left">
+            <div class="bio-avatar">📷</div>
+            <div class="bio-avail">● Dispo</div>
+        </div>
+        <div class="bio-right">
+            <div class="bio-handle">@noah.lens</div>
+            <div class="bio-name">Noah Mercier</div>
+            <div class="bio-text">Photographe indépendant basé à Paris.<br>Portrait · Urban · Lifestyle · Event.</div>
+            <div class="bio-tags">
+                <span class="bio-tag">Sony A7IV</span>
+                <span class="bio-tag">35mm</span>
+                <span class="bio-tag">Film</span>
+                <span class="bio-tag">Lightroom</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div class="sep">
+        <div class="sep-line"></div>
+        <div class="sep-text">Portfolio</div>
+        <div class="sep-line"></div>
+    </div>
+
+    <div class="portfolio-strip">
+        <a href="#" class="port-item">
+            <div class="port-img">👤</div>
+            <div class="port-info">
+                <div class="port-cat">Portrait</div>
+                <div class="port-title">Série Lumière</div>
+            </div>
+        </a>
+        <a href="#" class="port-item">
+            <div class="port-img">🌆</div>
+            <div class="port-info">
+                <div class="port-cat">Urban</div>
+                <div class="port-title">Paris Nuit</div>
+            </div>
+        </a>
+        <a href="#" class="port-item">
+            <div class="port-img">🌿</div>
+            <div class="port-info">
+                <div class="port-cat">Nature</div>
+                <div class="port-title">Saisons</div>
+            </div>
+        </a>
+        <a href="#" class="port-item">
+            <div class="port-img">🎭</div>
+            <div class="port-info">
+                <div class="port-cat">Event</div>
+                <div class="port-title">Mode & Scène</div>
+            </div>
+        </a>
+        <a href="#" class="port-item">
+            <div class="port-img">🏙️</div>
+            <div class="port-info">
+                <div class="port-cat">Architecture</div>
+                <div class="port-title">Béton Brut</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- RÉSEAUX -->
+    <div class="sep">
+        <div class="sep-line"></div>
+        <div class="sep-text">Réseaux</div>
+        <div class="sep-line"></div>
+    </div>
+
+    <div class="socials">
+        <a href="https://instagram.com" class="soc" target="_blank">
+            <div class="soc-ic">📸</div>
+            <div>
+                <div class="soc-nm">Instagram</div>
+                <div class="soc-hd">@noah.lens</div>
+            </div>
+        </a>
+        <a href="https://vsco.co" class="soc" target="_blank">
+            <div class="soc-ic">🎞</div>
+            <div>
+                <div class="soc-nm">VSCO</div>
+                <div class="soc-hd">noahlens</div>
+            </div>
+        </a>
+        <a href="https://behance.net" class="soc" target="_blank">
+            <div class="soc-ic">🖼️</div>
+            <div>
+                <div class="soc-nm">Behance</div>
+                <div class="soc-hd">noah-mercier</div>
+            </div>
+        </a>
+        <a href="https://flickr.com" class="soc" target="_blank">
+            <div class="soc-ic">📷</div>
+            <div>
+                <div class="soc-nm">Flickr</div>
+                <div class="soc-hd">noah.lens</div>
+            </div>
+        </a>
+        <a href="https://pinterest.com" class="soc" target="_blank">
+            <div class="soc-ic">📌</div>
+            <div>
+                <div class="soc-nm">Pinterest</div>
+                <div class="soc-hd">@noahlens</div>
+            </div>
+        </a>
+        <a href="https://youtube.com" class="soc" target="_blank">
+            <div class="soc-ic">▶️</div>
+            <div>
+                <div class="soc-nm">YouTube</div>
+                <div class="soc-hd">Noah Lens</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="sep">
+        <div class="sep-line"></div>
+        <div class="sep-text">Mes services</div>
+        <div class="sep-line"></div>
+    </div>
+
+    <div class="services">
+        <a href="#" class="service">
+            <div class="srv-num">01/</div>
+            <div class="srv-body">
+                <div class="srv-title">Shooting Portrait</div>
+                <div class="srv-desc">2h · retouches incluses · 30 photos HD</div>
+            </div>
+            <div class="srv-price">250 €</div>
+            <div class="srv-arrow">→</div>
+        </a>
+        <a href="#" class="service">
+            <div class="srv-num">02/</div>
+            <div class="srv-body">
+                <div class="srv-title">Reportage Événement</div>
+                <div class="srv-desc">Soirée, concert, conférence · journée complète</div>
+            </div>
+            <div class="srv-price">800 €</div>
+            <div class="srv-arrow">→</div>
+        </a>
+        <a href="#" class="service">
+            <div class="srv-num">03/</div>
+            <div class="srv-body">
+                <div class="srv-title">Shooting Mode / Brand</div>
+                <div class="srv-desc">Studio ou extérieur · usage commercial</div>
+            </div>
+            <div class="srv-price">Sur devis</div>
+            <div class="srv-arrow">→</div>
+        </a>
+        <a href="#" class="service">
+            <div class="srv-num">04/</div>
+            <div class="srv-body">
+                <div class="srv-title">Presets Lightroom</div>
+                <div class="srv-desc">Pack de 20 presets · style film argentique</div>
+            </div>
+            <div class="srv-price">35 €</div>
+            <div class="srv-arrow">→</div>
+        </a>
+    </div>
+
+    <!-- LIENS -->
+    <div class="sep">
+        <div class="sep-line"></div>
+        <div class="sep-text">Liens</div>
+        <div class="sep-line"></div>
+    </div>
+
+    <div class="links">
+        <a href="#" class="lk">
+            <div class="lk-ic">🌐</div>
+            <div class="lk-b">
+                <div class="lk-t">Site Portfolio Complet</div>
+                <div class="lk-d">noahlens.fr — toutes mes séries</div>
+            </div>
+            <div class="lk-arr">→</div>
+        </a>
+        <a href="#" class="lk">
+            <div class="lk-ic">📅</div>
+            <div class="lk-b">
+                <div class="lk-t">Réserver un shooting</div>
+                <div class="lk-d">Calendrier & disponibilités en ligne</div>
+            </div>
+            <div class="lk-arr">→</div>
+        </a>
+        <a href="#" class="lk">
+            <div class="lk-ic">📧</div>
+            <div class="lk-b">
+                <div class="lk-t">Contact Pro</div>
+                <div class="lk-d">contact@noahlens.fr</div>
+            </div>
+            <div class="lk-arr">→</div>
+        </a>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <div class="footer-sig">Noah Lens</div>
+        <div class="footer-exp">f/1.8 · Paris · 2026</div>
+        <div class="footer-copy">© 2026 · Tous droits réservés · Photos protégées</div>
+    </div>
+
+</div>
+
+</body>
+</html>
